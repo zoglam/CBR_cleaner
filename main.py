@@ -1,4 +1,4 @@
-import PySimpleGUI as sg
+﻿import PySimpleGUI as sg
 import patoolib
 import zipfile
 import os
@@ -47,7 +47,7 @@ def decompress(values):
             pathToZip = values + i
             pathToFolder = pathToZip[0:len(pathToZip)-4]
             if os.path.exists(pathToFolder):
-                print("! Warning directory is exist - ", i)
+                print("! Warning directory is exist for - ", i)
             elif zipfile.is_zipfile(pathToZip):
                 z = zipfile.ZipFile(pathToZip, 'r')
                 z.extractall(pathToFolder)
@@ -65,7 +65,7 @@ def decompress(values):
             pathToRar = values + i
             pathToFolder = pathToRar[0:len(pathToRar)-4]
             if os.path.exists(pathToFolder):
-                print("× Error directory for -", i, " - is exist")
+                print("! Warning directory is exist for - ", i)
             elif patoolib.get_archive_format(pathToRar)[0] == "rar":
                 patoolib.extract_archive(
                     pathToRar, outdir=pathToFolder, verbosity=-1)
