@@ -1,99 +1,76 @@
-﻿import PySimpleGUI as sg
-import patoolib
-import zipfile
-import os
-
-
-def decompress(values):
-    listOfZips = []
-    listOfRars = []
-    invalidFormatZip = ["....zip", "...zip", "..zip", "  .zip", " .zip"]
-
-    if values != '' and event == 'Transform files to cbr':
-        print("Starting decompressing...")
-        os.chdir(values)  # Перейти по пути
-
-        # Найти все .zip / .rar -> занести в список listOfZips / listOfRars
-        for root, dirs, files in os.walk(".", topdown=False):
-            for name in files:
-                fileName = os.path.join(root, name)
-                if fileName[len(fileName)-4:len(fileName)] == '.zip':
-                    newFileName = fileName
-                    for i in invalidFormatZip:
-                        newFileName = newFileName.replace(i, ".zip")
-                    os.rename(fileName, newFileName)
-                    newFileName = newFileName[1:len(
-                        newFileName)].replace("\\", "/")
-                    listOfZips.append(newFileName)
-                elif fileName[len(fileName)-4:len(fileName)] == '.rar':
-                    newFileName = fileName.replace("....rar", ".rar")
-                    os.rename(fileName, newFileName)
-                    newFileName = newFileName[1:len(
-                        newFileName)].replace("\\", "/")
-                    listOfRars.append(newFileName)
-                elif fileName[len(fileName)-4:len(fileName)] == '.cbr':
-                    newFileName = fileName[0:len(fileName)-4] + '.rar'
-                    newFileName = newFileName.replace("....rar", ".rar")
-                    os.rename(fileName, newFileName)
-                    newFileName = newFileName[1:len(
-                        newFileName)].replace("\\", "/")
-                    listOfZips.append(newFileName)
-
-        print(
-            "------------------------------------------------------------------------------")
-        print("Starting .zip decompressing...")
-        # Открыть каждый zip и разархивировать
-        for i in listOfZips:
-            pathToZip = values + i
-            pathToFolder = pathToZip[0:len(pathToZip)-4]
-            if os.path.exists(pathToFolder):
-                print("! Warning directory is exist for - ", i)
-            elif zipfile.is_zipfile(pathToZip):
-                z = zipfile.ZipFile(pathToZip, 'r')
-                z.extractall(pathToFolder)
-                z.close()
-                os.chmod(pathToZip, 0o777)
-                os.remove(pathToZip)
-                print("v Done - ", i)
-            else:
-                print("× Error - ", i, " - is not .zip")
-
-        print(
-            "------------------------------------------------------------------------------")
-        print("Starting .rar decompressing...")
-        for i in listOfRars:
-            pathToRar = values + i
-            pathToFolder = pathToRar[0:len(pathToRar)-4]
-            if os.path.exists(pathToFolder):
-                print("! Warning directory is exist for - ", i)
-            elif patoolib.get_archive_format(pathToRar)[0] == "rar":
-                patoolib.extract_archive(
-                    pathToRar, outdir=pathToFolder, verbosity=-1)
-                os.chmod(pathToRar, 0o777)
-                os.remove(pathToRar)
-                print("v Done - ", i)
-            else:
-                print("× Error - ", i, " - is not .rar")
-        print(
-            "------------------------------------------------------------------------------")
-        print("Decompressing is over")
-        print(
-            "------------------------------------------------------------------------------")
+import PySimpleGUI as sg
+import decompress as dc
 
 
 sg.theme('SandyBeach')
-layout = [[sg.Text('Print comix\\manga folder here:\n')],
-          [sg.FolderBrowse(button_text='Choose', size=(10, 1)),
-           sg.Input(size=(37, 1))],
-          [sg.Text()],
-          [sg.OK(button_text='Transform files to cbr', size=(44, 1))]]
-window = sg.Window('CbrCreator', layout)
 
-event = ''
-while event != 'None':
-    event, values = window.Read()
-    if(not event):
-        break
-    decompress(values[0])
-print("\"CbrCreator\" closed")
-window.close()
+ok_button = 'Transform files to cbr'
+app_name = 'CbrCreator'
+
+layout = [      
+    [
+        sg.Text('Print comix\\manga folder here:\n')
+    ],
+    [
+        sg.FolderBrowse(button_text='Choose', size=(20, 1)),
+        sg.Input(size=(83, 1))
+    ],
+    [        
+        sg.OK(button_text=ok_button, size=(27, 2)),
+        sg.Frame(layout=
+        [      
+            [
+                sg.Checkbox('Look for .zip', size=(17,1), default=True, key='zip'),  
+                sg.Checkbox('Look for .rar', size=(16,1), key='rar'),  
+                sg.Checkbox('Remove trash folders', size=(16,1), key='folders')
+            ],      
+        ], title=' Options ',title_color='#000', border_width=6)
+    ], 
+    [
+        sg.Frame(layout=
+        [    
+            [
+                sg.Output(size=(100, 20))
+            ]
+        ], title=' Output ',title_color='#000', border_width=5)
+    ],    
+    [
+        sg.ProgressBar(1000, orientation='h', size=(58, 20),
+            key='progbar', bar_color=('green', '#EFECCB'))
+    ],
+    [
+        sg.Text('0 %', justification='center', size=(94, 1), key='percent_progress')
+    ],
+]
+
+window = sg.Window(app_name, layout)
+
+while True:
+    try:
+        event, values = window.Read() 
+
+        progressBarValue = 0
+        window['progbar'].update_bar(0)
+        if(not event):
+            print("\"",app_name,"\" closed")
+            window.close()
+            break
+        print("Starting decompressing...")
+
+        listOfZips, listOfRars, progressBarPerStep = dc.findArchives(values, event, ok_button)
+
+        if values['zip']:
+            print("\nStarting .zip decompressing...")
+            progressBarValue = dc.decompressZip(listOfZips, values, window, progressBarValue, progressBarPerStep)
+
+        if values['rar']:
+            print("\nStarting .rar decompressing...")
+            dc.decompressRar(listOfRars, values, window, progressBarValue, progressBarPerStep)
+        
+        window['progbar'].update_bar(1000)
+        window['percent_progress'].update('100 %')
+        print("--------------------------------------------------")
+        print("Decompressing is over", 5*"\n")
+    except Exception as e:
+        print("× Error -", e)
+        continue

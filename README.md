@@ -2,13 +2,15 @@
 Transform files to cbr
 # Version
 ```
-python 3.8.1
+python 3.8.2
 ```
 # Installing
 ```
+PySimpleGUI-4.16.0
 pip install PySimpleGUI
 ```
 ```
+patool-1.12
 pip install patool
 ```
 ```
