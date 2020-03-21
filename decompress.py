@@ -4,6 +4,15 @@ import zipfile
 import os
 import shutil
 
+# Цвета для вывода в консоли
+def colorForPrint(pickColor):
+    dictColors = {
+        'red': '#c71c1f',
+        'green': '#2e9e30',
+        'black': '#2C2825',
+        'yellow': '#fff000'
+    }
+    return dictColors[pickColor]
 
 def findArchives(values, event, ok_button):
     listOfZips = []
@@ -54,7 +63,7 @@ def decompressZip(listOfZips, values, window, progressBarValue, progressBarPerSt
             pathToZip = values['Choose'] + i
             pathToFolder = pathToZip[0:len(pathToZip)-4]
             if os.path.exists(pathToFolder):
-                print("! Warning directory is exist for - ", i)
+                sg.Print("! Warning directory is exist for - ", i, text_color=colorForPrint("yellow"))
                 if values['trashFolders']: 
                     trashFolders(pathToFolder, 0, pathToFolder)
             elif zipfile.is_zipfile(pathToZip):
@@ -65,15 +74,15 @@ def decompressZip(listOfZips, values, window, progressBarValue, progressBarPerSt
                 os.remove(pathToZip)
                 if values['trashFolders']: 
                     trashFolders(pathToFolder, 0, pathToFolder)
-                print("v Done - ", i)
+                sg.Print("v Done - ", i, text_color=colorForPrint("green"))
             else:
-                print("× Error - ", i, " - is not .zip") 
+                sg.Print("× Error - ", i, " - is not .zip", text_color=colorForPrint("red")) 
 
             progressBarValue += progressBarPerStep
             window['progbar'].update_bar(progressBarValue + 1)
             window['percent_progress'].update(str(round(progressBarValue/10)) + ' %')
         except Exception as e:
-            print("× Error in decompressZip -", e)
+            sg.Print("× Error in decompressZip -", e, text_color=colorForPrint("red"))
             continue
     return progressBarValue
 
@@ -84,7 +93,7 @@ def decompressRar(listOfRars, values, window, progressBarValue, progressBarPerSt
             pathToRar = values['Choose'] + i
             pathToFolder = pathToRar[0:len(pathToRar)-4]
             if os.path.exists(pathToFolder):
-                print("! Warning directory is exist for - ", i)
+                sg.Print("! Warning directory is exist for - ", i, text_color=colorForPrint("yellow"))
                 if values['trashFolders']: 
                     trashFolders(pathToFolder, 0, pathToFolder)
             elif patoolib.get_archive_format(pathToRar)[0] == "rar":
@@ -93,15 +102,15 @@ def decompressRar(listOfRars, values, window, progressBarValue, progressBarPerSt
                 os.remove(pathToRar)
                 if values['trashFolders']: 
                     trashFolders(pathToFolder, 0, pathToFolder)
-                print("v Done - ", i)
+                sg.Print("v Done - ", i, text_color=colorForPrint("green"))
             else:
-                print("× Error - ", i, " - is not .rar")
+                sg.Print("× Error - ", i, " - is not .rar", text_color=colorForPrint("red"))
                     
             progressBarValue += progressBarPerStep
             window['progbar'].update_bar(progressBarValue + 1)
             window['percent_progress'].update(str(round(progressBarValue/10)) + ' %') 
         except Exception as e:
-            print("× Error in decompressRar -", e)
+            sg.Print("× Error in decompressRar -", e, text_color=colorForPrint("red"))
             continue
 
 def trashFolders(pathToFolder, caveCounter, mainPath):
@@ -110,11 +119,12 @@ def trashFolders(pathToFolder, caveCounter, mainPath):
 
         if len(listDirs) == 0:
             if not(len(listFiles) == 0) and not(mainPath == pathToFolder):
-                #print(caveCounter,"root: ",mainPath,"\ncurr: ",pathToFolder,"\n\n")                
+                #sg.Print(caveCounter,"root: ",mainPath,"\ncurr: ",pathToFolder,"\n\n")                
                 for f in listFiles:
                     shutil.move(pathToFolder+"/"+f, mainPath) # переместить каждый файл в указанный dir
                 listDirs, _, _ = findDirs(mainPath, 1, '') # выписать dir, которую удалить
                 shutil.rmtree(mainPath + "/" + listDirs[0], ignore_errors=True) # удалить ненужный dir
+                sg.Print("v Trash - ", mainPath + "/" + listDirs[0], text_color=colorForPrint("green"))
             return
         elif len(listDirs) == 1:
             trashpath = pathToFolder + "/" + listDirs[0]
@@ -126,7 +136,7 @@ def trashFolders(pathToFolder, caveCounter, mainPath):
                 trashFolders(trashpath, 0, mainPath + "/" + i)
 
     except Exception as e:
-        print("× Error in trashFolders -", e)
+        sg.Print("× Error in trashFolders -", e, text_color=colorForPrint("red"))
 
 # В указанном дириктории pathToFolder выполняет
 # поиск файлов, папок текущего уровня и выписывается
